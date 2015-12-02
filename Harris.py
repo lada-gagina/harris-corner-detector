@@ -34,7 +34,7 @@ fragmentWidth = 5
 fragmentHeight = 5
 k = 0.05
 z = 1e-2
-clusterRadius = 15
+maxPointsDistance = 2
 
 gaussianCore = [[ 2,  4,  5,  4, 2],
                 [ 4,  9, 12,  9, 4],
@@ -114,26 +114,31 @@ def findCenterOf(cluster):
 
     return firstPoint
 
+def addToCluster(point, cluster, points):
+    cluster.append(point)
+
+    for p in points:
+        d = distance(point, p)
+        if d < maxPointsDistance:
+            points.remove(p)
+            addToCluster(p, cluster, points)
+
 def drawClosePointsAsOne(points):
     while (points):
-        cluster = []
-        point = points[0]
-        cluster.append(point)
-
         for p in points:
-            d = distance(point, p)
-            if d < clusterRadius:
-                cluster.append(p)
-                points.remove(p)
+            cluster = []
+            addToCluster(p, cluster, points)
+            center = findCenterOf(cluster)
 
-        center = findCenterOf(cluster)
-
-        for i in range(center[0] - 1, center[0] + 1):
-            for j in range(center[1] - 1, center[1] + 1):
-                imageArray[i,j] = [255,0,0]
+            for i in range(center[0] - 1, center[0] + 1):
+                for j in range(center[1] - 1, center[1] + 1):
+                    imageArray[i,j] = [255,0,0]
 
         save()
 
+# Uncomment to see points found by Harris detector itself:
+#drawCornersOnImageWithoutClusterization()
+
+# To see clusterized points:
 corners = harris()
 drawClosePointsAsOne(corners)
-#drawCornersOnImageWithoutClusterization()
