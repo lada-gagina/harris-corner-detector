@@ -7,7 +7,7 @@ if (len(sys.argv) < 2):
     print("Pass the path to input file as an argument")
     exit()
 input_image_file = sys.argv[1]
-output_image_file = 'output.png'
+output_image_file = 'output.jpg'
 
 image = Image.open(input_image_file)
 imageWidth, imageHeight = image.size
@@ -33,8 +33,8 @@ dy = imageGradient(grayScaleImage, False)
 fragmentWidth = 5
 fragmentHeight = 5
 k = 0.05
-z = 1e-2
-maxPointsDistance = 2
+z = 1e-4
+maxPointsDistance = 5
 
 gaussianCore = [[ 2,  4,  5,  4, 2],
                 [ 4,  9, 12,  9, 4],
@@ -116,25 +116,49 @@ def findCenterOf(cluster):
 
 def addToCluster(point, cluster, points):
     cluster.append(point)
+    points.remove(point)
 
     for p in points:
         d = distance(point, p)
         if d < maxPointsDistance:
-            points.remove(p)
             addToCluster(p, cluster, points)
+
+def buildCluster(point, points):
+    cluster = []
+    changed = True
+
+    for p in points:
+        d = distance(point, p)
+        if d < maxPointsDistance:
+            cluster.append(p)
+            points.remove(p)
+
+    while (changed):
+        changed = False
+        for p1 in cluster:
+            for p2 in points:
+                d = distance(p1, p2)
+                if d < maxPointsDistance:
+                    cluster.append(p2)
+                    changed = True
+                    points.remove(p2)
+    return cluster
+
 
 def drawClosePointsAsOne(points):
     while (points):
-        for p in points:
-            cluster = []
-            addToCluster(p, cluster, points)
-            center = findCenterOf(cluster)
+        p = points[0]
+        #cluster = []
+        #addToCluster(p, cluster, points)
+        cluster = buildCluster(p, points)
+        center = findCenterOf(cluster)
 
-            for i in range(center[0] - 1, center[0] + 1):
-                for j in range(center[1] - 1, center[1] + 1):
-                    imageArray[i,j] = [255,0,0]
+        for i in range(center[0] - 1, center[0] + 2):
+            for j in range(center[1] - 1, center[1] + 2):
+                imageArray[i,j] = [255,0,0]
+        imageArray[center[0], center[1]] = [0,0,255]
 
-        save()
+    save()
 
 # Uncomment to see points found by Harris detector itself:
 #drawCornersOnImageWithoutClusterization()
